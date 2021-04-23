@@ -16,64 +16,35 @@ use IEEE.NUMERIC_STD.ALL;
 entity main3_final is port (
    sw : in UNSIGNED (15 downto 0);
    clk  : in  STD_LOGIC;
-   btnU, btnD,  btnC  : in  STD_LOGIC;
+   btnU, btnD,  btnC  : in  STD_LOGIC;--btnL, btnR,
    seg  : out STD_LOGIC_VECTOR (6 downto 0);
    dp  : out STD_LOGIC;
    an   : out STD_LOGIC_VECTOR (3 downto 0));
+   
 end main3_final;
 
 architecture Behavioral of main3_final is
-
-component frq_div
-    generic(n:integer);  -- frq_div_coefficient
-    Port (  clk : in STD_LOGIC;
-            clkout : out std_logic
-            );
-end component;
-
-component counter
-  Port (clk_sec : in std_logic;
-        btnC : in std_logic;  -- outside set_go control signal 
-        btnU, btnD : in std_logic;
-        digit_3 : out std_logic_vector(3 downto 0);
-        digit_2 : out std_logic_vector(3 downto 0);
-        digit_1 : out std_logic_vector(3 downto 0);
-        digit_0 : out std_logic_vector(3 downto 0)
-         );
-end component;
-
-signal digit_3 : std_logic_vector(3 downto 0); -- corresponding to d3 of the 4 digit LED controller
-signal digit_2 : std_logic_vector(3 downto 0); -- corresponding to d2 of the 4 digit LED controller
-signal digit_1 : std_logic_vector(3 downto 0); -- corresponding to d1 of the 4 digit LED controller
-signal digit_0 : std_logic_vector(3 downto 0); -- corresponding to d0 of the 4 digit LED controller
-signal clk_sec : std_logic;  -- second hand signal
-signal clk_led : std_logic;
---signal set_go : std_logic:='0';  -- the timer is at set mode when it is first started
---signal flag : std_logic;
-
+signal DD3,DD2,DD1,DD0: STD_LOGIC_VECTOR(3 DOWNTO 0):=(others =>'0');
+signal CK1khz,DONE,CK1hz: STD_LOGIC :='0';
+signal tmp_AN : STD_LOGIC_VECTOR(3 DOWNTO 0):="0000";
+signal tupclk,tdnclk :std_logic;
+ 
 begin
+    Fre_div_unit: entity work.fre_div(Behavioral)
+      port map( CK_IN => clk, CK_OUT => CK1khz,CK_1s => CK1HZ);    
+    
+    four_digits_unit: entity work.four_digits(behavioral)
+      port map ( D3 =>DD3,D2 =>DD2,
+                 D1 =>DD1,D0 =>DD0,
+                 Ck =>CK1khz, SEG=>SEG, AN => tmp_AN); 
+    controller_unit: entity work.controller (Behavioral)
+      port map( clk=> clk,DONE => DONE, Down => btnD, up => btnU, Go => btnC, 
+                upclk=>tupclk, dnclk=>tdnclk);
+   count_down_unit:  entity work.count_down(behavioral)
+      port map( CK => CK1hz, clk=>clk,DONE => DONE, sw => sw, 
+               upclk=> tupclk, dnclk=>tdnclk,
+               D3 => DD3,D2=>DD2,D1=>DD1,D0=>DD0);
 
-    uut_frq_div_sec:frq_div
-        generic map (n => 100)  -- for testbench the clock period is 1ns, n have to be 100000000 to obtain 1Hz signal. But costs too much time.
-        port map (clk => clk, clkout => clk_sec);
-        
-    uut_frq_div_led:frq_div
-        generic map (n => 5)  -- clock signal that is used to refresh the 4 digits LED
-        port map (clk => clk, clkout => clk_led);
-
-    uut_counter:counter  -- this is the settable timer
-        port map (clk_sec => clk_sec, 
-                  btnC => btnC,
-                  btnU => btnU, btnD => btnD,
-                  digit_3 => digit_3, digit_2 => digit_2, digit_1 => digit_1, digit_0 => digit_0
-                  );
-        
-    four_digits_unit : entity work.four_digits(Behavioral)  -- reuse LED controller 
-        Port map (d3 => digit_3(3 downto 0),
-                  d2 => digit_2(3 downto 0),
-                  d1 => digit_1(3 downto 0),
-                  d0 => digit_0(3 downto 0),
-                  ck => clk_led, seg => seg, an => an, dp => dp);
-                     
-          
+   DP <= '0' When tmp_AN= "1011"else'1';
+   AN <= tmp_AN;
 end Behavioral;

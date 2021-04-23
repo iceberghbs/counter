@@ -33,5 +33,6 @@ begin
                   d2 => sw(11 downto 8),
                   d1 => sw(7 downto 4),
                   d0 => sw(3 downto 0),
-                  ck => btnC, seg => seg, an => an);
+                  ck => btnC, 
+                  seg => seg, an => an);
 end Behavioral;

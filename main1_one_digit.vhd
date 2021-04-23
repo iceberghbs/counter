@@ -19,15 +19,28 @@ entity main1_one_digit is
         sw   : in  STD_LOGIC_VECTOR (15 downto 0);
         seg  : out STD_LOGIC_VECTOR (6 downto 0);
         dp   : out STD_LOGIC;
-        an   : out STD_LOGIC_VECTOR (3 downto 0));  -- digit selection
+        an   : out STD_LOGIC_VECTOR (3 downto 0));
 end main1_one_digit;
 
 architecture Behavioral of main1_one_digit is
-
+    component one_digit
+    Port (
+          digit: in std_logic_vector(3 downto 0); 
+          seg  : out STD_LOGIC_VECTOR (6 downto 0);
+          dp   : out STD_LOGIC;
+          an   : out STD_LOGIC_VECTOR (3 downto 0)
+          );
+     end component;
+     
+     signal an_int :std_logic_vector(3 downto 0); 
+     signal dp_int: std_logic;
 begin
     -- instantiate one one_digit decoder that will decode the active digit
-    one_digit_unit : entity work.one_digit(Behavioral)
-        Port map (digit => sw(3 downto 0), seg => seg);
-    an <= sw(15 downto 12);  -- leftmost 4 switches
-    dp <= sw(5);
+    an_int  <=  sw(15 downto 12);
+    dp_int <= sw(5);
+    U1:  one_digit Port map 
+        (   digit => sw(3 downto 0),
+            seg => seg
+         );
 end Behavioral;
+
